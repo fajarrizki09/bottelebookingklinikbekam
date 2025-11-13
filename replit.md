@@ -5,10 +5,16 @@ This is a Telegram bot for managing appointments at "Rumah Sehat Dani Sabri," a 
 # Recent Changes
 
 ## November 13, 2025 (Latest)
-- **Admin Waitlist Phone Number Display**: Fixed admin panel to show phone numbers in waitlist management:
-  - Added phone number display in waitlist list view (shows in button labels)
-  - Added phone number display in waitlist detail view (shows in contact information section)
-  - Rationale: Admin needs contact information to follow up with users on waitlist, but phone numbers were not visible despite being stored in database
+- **Admin Waitlist Phone Number Bug Fix**: Completely resolved phone number display issue in admin panel waitlist management:
+  - **Root Cause**: `get_waitlist_entry()` SQL query was missing `phone` column in SELECT statement, causing phone data not to be retrieved
+  - **Secondary Issue**: Code used `aiosqlite.Row.get()` method which doesn't exist, would cause AttributeError
+  - **Fix Applied**:
+    1. Added `phone` column to `get_waitlist_entry()` SELECT query in `database/db.py`
+    2. Implemented defensive row-to-dict conversion in `handlers/admin.py` for both `admin_waitlist_callback()` and `view_waitlist_entry_callback()`
+    3. Changed from `item.get('phone')` to `dict(item).get('phone') or 'Tidak ada'` for safe NULL handling
+  - **Result**: Phone numbers now display correctly in both waitlist list view (button labels) and detail view (contact information)
+  - **Edge Cases Handled**: NULL phone values from pre-migration records safely display as "Tidak ada"
+  - Rationale: Admin needs contact information to follow up with users on waitlist. Previous code would crash or fail to display phone numbers despite them being stored in database
 - **Prayer Times API Critical Fix**: Resolved excessive API requests and HTTP 302 redirect errors:
   - Root cause 1: Missing `httpx` package in requirements.txt (code used httpx but package wasn't installed, causing import failures)
   - Root cause 2: Aladhan API endpoint format changed - now requires date as path parameter instead of query parameter
